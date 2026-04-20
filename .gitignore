@@ -1,0 +1,18 @@
+# Data files (too large to commit)
+data/
+
+# Go
+backend/bin/
+*.exe
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
