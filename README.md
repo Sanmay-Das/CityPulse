@@ -47,7 +47,7 @@ citypulse/
 ├── backend/
 │   ├── cmd/
 │   │   ├── server/        # GraphQL + REST API server
-│   │   └── etl/           # Load crimes CSV -> PostgreSQL)
+│   │   └── etl/           # Load crimes CSV -> PostgreSQL
 │   └── internal/
 │       ├── db/            # PostgreSQL queries
 │       ├── etl/           # Spatial join, aggregation, bulk insert
