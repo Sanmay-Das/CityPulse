@@ -17,8 +17,8 @@ Currently covers **Chicago** (2001-2020) and **Los Angeles** (2020-2024).
 | Map | react-map-gl + MapLibre GL + Deck.gl |
 | Charts | Recharts + D3 color scale |
 | State | Zustand + Apollo Client |
-| API | GraphQL (Go) |
-| Database | PostgreSQL (Docker) |
+| API | GraphQL |
+| Database | PostgreSQL |
 | ETL | Go - spatial join via R-tree (paulmach/orb + tidwall/rtree) |
 | Styling | Tailwind CSS |
 | Reporting | PowerBI Desktop via CSV export endpoint |
@@ -47,11 +47,11 @@ citypulse/
 ├── backend/
 │   ├── cmd/
 │   │   ├── server/        # GraphQL + REST API server
-│   │   └── etl/           # One-time ETL pipeline (load crimes CSV → PostgreSQL)
+│   │   └── etl/           # Load crimes CSV -> PostgreSQL)
 │   └── internal/
 │       ├── db/            # PostgreSQL queries
 │       ├── etl/           # Spatial join, aggregation, bulk insert
-│       └── graph/         # GraphQL schema + resolvers
+│       └── graph/         # GraphQL schema
 ├── frontend/
 │   ├── public/            # Static GeoJSON boundary files (per city)
 │   └── src/
@@ -61,7 +61,7 @@ citypulse/
 │       │   └── Charts/    # TrendChart, CrimeTypeChart
 │       ├── graphql/       # Apollo queries
 │       └── store/         # Zustand global state
-├── data/                  # Raw CSVs and GeoJSON (not committed — see below)
+├── data/                  # Raw CSVs and GeoJSON
 └── docker-compose.yml     # PostgreSQL database
 ```
 
