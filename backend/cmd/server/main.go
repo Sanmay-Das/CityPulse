@@ -121,8 +121,12 @@ func main() {
 	})
 
 	// ── CORS + server ─────────────────────────────────────────────────────────
+	allowedOrigins := []string{"http://localhost:5173", "http://localhost:3000"}
+	if o := os.Getenv("ALLOWED_ORIGIN"); o != "" {
+		allowedOrigins = append(allowedOrigins, o)
+	}
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: false,
