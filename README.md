@@ -1,8 +1,8 @@
 # CityPulse
 
-A multi-city crime analytics platform that visualizes crime density by ZIP code on an interactive map, backed by a GraphQL API and connected to PowerBI for reporting.
+A multi-city crime analytics platform that visualizes crime density by ZIP code on an interactive map.
 
-Currently covers **Chicago** (2001–2020) and **Los Angeles** (2020–2024).
+Currently covers **Chicago** (2001-2020) and **Los Angeles** (2020-2024).
 
 ---
 
@@ -16,7 +16,7 @@ Currently covers **Chicago** (2001–2020) and **Los Angeles** (2020–2024).
 | State | Zustand + Apollo Client |
 | API | GraphQL (Go) |
 | Database | PostgreSQL (Docker) |
-| ETL | Go — spatial join via R-tree (paulmach/orb + tidwall/rtree) |
+| ETL | Go - spatial join via R-tree (paulmach/orb + tidwall/rtree) |
 | Styling | Tailwind CSS |
 | Reporting | PowerBI Desktop via CSV export endpoint |
 
@@ -24,16 +24,16 @@ Currently covers **Chicago** (2001–2020) and **Los Angeles** (2020–2024).
 
 ## Features
 
-- **Choropleth map** — ZIP codes colored yellow → red by crime density
-- **City switcher** — switch between Chicago and Los Angeles; map re-centers automatically
-- **Year filter** — filter by any year available for the selected city
-- **Drilldown panel** — click any ZIP to see:
+- **Choropleth map** - ZIP codes colored yellow -> red by crime density
+- **City switcher** - switch between Chicago and Los Angeles; map re-centers automatically
+- **Year filter** - filter by any year available for the selected city
+- **Drilldown panel** - click any ZIP to see:
   - Total crimes + 1-year trend indicator
   - Monthly crime trend line chart
   - Top crime types bar chart
-- **Dynamic year range** — header shows the actual data range for the selected city
-- **CSV export** — export raw aggregated data per city/year for PowerBI or Excel
-- **PowerBI integration** — connect via the `/api/export/csv` REST endpoint
+- **Dynamic year range** - header shows the actual data range for the selected city
+- **CSV export** - export raw aggregated data per city/year for PowerBI or Excel
+- **PowerBI integration** - connect via the `/api/export/csv` REST endpoint
 
 ---
 
@@ -86,8 +86,6 @@ Get-Content backend/internal/db/schema.sql | docker exec -i chicago_safety_db ps
 
 ### 3. Run the ETL
 
-Download crime data from [STAR UCR](https://starucr.fbi.gov/) and ZIP boundaries from the same portal.
-
 **Chicago:**
 ```bash
 cd backend
@@ -120,20 +118,9 @@ npm run dev
 
 ---
 
-## Data Sources
-
-| City | Crime Data | Boundaries |
-|---|---|---|
-| Chicago | FBI STAR UCR (2001–2020) | TIGER 2018 ZCTA5 |
-| Los Angeles | LA Open Data Portal (2020–2024) | TIGER 2018 ZCTA5 |
-
-> Raw CSV files are not committed to this repository due to file size. Download them separately using the links above.
-
----
-
 ## API
 
-### GraphQL — `POST /graphql`
+### GraphQL - `POST /graphql`
 
 ```graphql
 # All ZIP stats for a city/year
@@ -181,6 +168,6 @@ query {
 ## PowerBI Integration
 
 1. Open PowerBI Desktop
-2. **Get Data → Web**
+2. **Get Data -> Web**
 3. Enter: `http://localhost:8080/api/export/csv?city=Chicago`
 4. Load and build reports on top of the aggregated ZIP-level crime data
