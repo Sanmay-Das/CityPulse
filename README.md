@@ -164,7 +164,6 @@ query {
 |---|---|
 | `GET /api/export/csv?city=Chicago&year=2019` | Download aggregated data as CSV |
 | `GET /api/export/json?city=Chicago` | Same data as JSON |
-| `GET /api/health` | Health check |
 
 ---
 
