@@ -1,11 +1,12 @@
-# CityPulse
+# CityCrimes
 
 A multi-city crime analytics platform that visualizes crime density by ZIP code on an interactive map.
 
-<img width="1919" height="896" alt="Screenshot 2026-04-20 053839" src="https://github.com/user-attachments/assets/3d8dc09e-0802-46b7-8666-c37ade0caf71" />
+<img width="1919" height="963" alt="Screenshot 2026-04-21 045616" src="https://github.com/user-attachments/assets/298766f9-feaf-4b04-8c87-966be1ef9e0a" />
 
 
-Currently covers **Chicago** (2001-2020) and **Los Angeles** (2020-2024).
+
+Currently covers **Chicago**, **Los Angeles** and **San Francisco**.
 
 ---
 
