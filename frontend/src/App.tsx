@@ -39,7 +39,7 @@ export default function App() {
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-700">
         <div className="flex items-center gap-3">
           <div className="w-2 h-6 bg-chicago-red rounded-full" />
-          <h1 className="text-white font-bold text-lg tracking-tight">CityPulse</h1>
+          <h1 className="text-white font-bold text-lg tracking-tight">CityCrimes</h1>
           <span className="text-slate-400 text-sm hidden sm:block">
             Crime by ZIP Code · {yearRangeLabel}
           </span>
