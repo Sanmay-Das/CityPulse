@@ -68,12 +68,12 @@ function CustomYTick({ x, y, payload }: any) {
 }
 
 export default function CrimeTypeChart({ data }: Props) {
-  const top10 = data.slice(0, 10);
+  const chartHeight = Math.max(300, data.length * 32);
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={chartHeight}>
       <BarChart
-        data={top10}
+        data={data}
         layout="vertical"
         margin={{ top: 0, right: 8, left: 4, bottom: 0 }}
         barCategoryGap="20%"
@@ -104,7 +104,7 @@ export default function CrimeTypeChart({ data }: Props) {
           formatter={(v: number) => [v.toLocaleString(), "Crimes"]}
         />
         <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-          {top10.map((_, i) => (
+          {data.map((_, i) => (
             <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
           ))}
         </Bar>
