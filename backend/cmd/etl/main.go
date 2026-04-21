@@ -19,6 +19,21 @@
 //	  -zipgeo  ../data/TIGER2018_ZCTA5_LA.geojson \
 //	  -city    "Los Angeles" \
 //	  -format  la
+//
+// Usage (San Francisco — run historical first, then append newer file):
+//
+//	go run ./cmd/etl \
+//	  -crimes  "../data/Police_Department_Incident_Reports__Historical_2003_to_May_2018.csv" \
+//	  -zipgeo  ../data/TIGER2018_ZCTA5_SF.geojson \
+//	  -city    "San Francisco" \
+//	  -format  sf-historical
+//
+//	go run ./cmd/etl \
+//	  -crimes  "../data/Police_Department_Incident_Reports__2018_to_Present.csv" \
+//	  -zipgeo  ../data/TIGER2018_ZCTA5_SF.geojson \
+//	  -city    "San Francisco" \
+//	  -format  sf-new \
+//	  -append
 package main
 
 import (
@@ -44,7 +59,8 @@ func main() {
 	zipPath := flag.String("zipgeo", "", "Path to ZIP code boundaries GeoJSON (required)")
 	outPath := flag.String("out", "", "Output path for simplified GeoJSON (auto-derived from city if empty)")
 	city := flag.String("city", "Chicago", "City name to tag loaded data with (e.g. Chicago, \"Los Angeles\")")
-	format := flag.String("format", "chicago", "CSV format: chicago | la")
+	format := flag.String("format", "chicago", "CSV format: chicago | la | sf-historical | sf-new")
+	appendMode := flag.Bool("append", false, "Append to existing data instead of replacing it (used for multi-file cities)")
 	flag.Parse()
 
 	if *crimesPath == "" || *zipPath == "" {
@@ -63,8 +79,12 @@ func main() {
 		csvFmt = etl.ChicagoFormat
 	case "la", "los_angeles", "losangeles":
 		csvFmt = etl.LAFormat
+	case "sf-historical", "sfhistorical":
+		csvFmt = etl.SFHistoricalFormat
+	case "sf-new", "sf", "sfnew":
+		csvFmt = etl.SFNewFormat
 	default:
-		log.Fatalf("Unknown -format %q. Valid values: chicago, la", *format)
+		log.Fatalf("Unknown -format %q. Valid values: chicago, la, sf-historical, sf-new", *format)
 	}
 
 	ctx := context.Background()
@@ -81,7 +101,7 @@ func main() {
 		log.Fatalf("LoadZIPBoundaries: %v", err)
 	}
 
-	if err := etl.LoadAndJoin(ctx, database, *crimesPath, idx, zipCodes, *city, csvFmt); err != nil {
+	if err := etl.LoadAndJoin(ctx, database, *crimesPath, idx, zipCodes, *city, csvFmt, *appendMode); err != nil {
 		log.Fatalf("LoadAndJoin: %v", err)
 	}
 }

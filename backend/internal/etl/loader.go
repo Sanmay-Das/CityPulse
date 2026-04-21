@@ -230,6 +230,43 @@ var LAFormat = CSVFormat{
 	MinCols:     28,
 }
 
+// SFHistoricalFormat matches SFPD historical export (2003–May 2018, has header).
+// Columns: PdId(0), IncidntNum(1), IncidentCode(2), Category(3), Descript(4),
+//
+//	DayOfWeek(5), Date(6), Time(7), PdDistrict(8), Resolution(9),
+//	Address(10), X/Lon(11), Y/Lat(12), location(13), data_loaded_at(14)
+var SFHistoricalFormat = CSVFormat{
+	HasHeader:   true,
+	LonCol:      11,
+	LatCol:      12,
+	DateCol:     6,
+	DateFormats: []string{"01/02/2006", "01-02-2006", "01/02/2006 15:04", "01-02-2006 15:04"},
+	TypeCol:     3,
+	YearCol:     -1,
+	MinCols:     13,
+}
+
+// SFNewFormat matches SFPD incident reports 2018-to-present export (has header).
+// Columns: RowID(0), IncidentDatetime(1), IncidentDate(2), IncidentTime(3),
+//
+//	IncidentYear(4), IncidentDayOfWeek(5), ReportDatetime(6), RowID(7),
+//	IncidentID(8), IncidentNumber(9), CADNumber(10), ReportTypeCode(11),
+//	ReportTypeDescription(12), FiledOnline(13), IncidentCode(14),
+//	IncidentCategory(15), IncidentSubcategory(16), IncidentDescription(17),
+//	Resolution(18), Intersection(19), CNN(20), PoliceDistrict(21),
+//	AnalysisNeighborhood(22), SupervisorDistrict(23), SupervisorDistrictDesc(24),
+//	Latitude(25), Longitude(26), Point(27)
+var SFNewFormat = CSVFormat{
+	HasHeader:   true,
+	LonCol:      25,
+	LatCol:      24,
+	DateCol:     1,
+	DateFormats: []string{"2006/01/02 03:04:05 PM", "2006/01/02 15:04:05", "2006-01-02T15:04:05"},
+	TypeCol:     14,
+	YearCol:     4,
+	MinCols:     26,
+}
+
 // ── Crime CSV loader ──────────────────────────────────────────────────────────
 
 type aggKey struct {
@@ -241,8 +278,9 @@ type aggKey struct {
 
 // LoadAndJoin reads a Crimes CSV using the supplied format descriptor,
 // spatially joins each crime to a ZIP code, aggregates counts, and
-// bulk-inserts into PostgreSQL.
-func LoadAndJoin(ctx context.Context, database *db.Database, crimesPath string, idx *spatialIndex, zipCodes []string, city string, csvFmt CSVFormat) error {
+// bulk-inserts into PostgreSQL. When append is true the existing rows for
+// the city are NOT deleted — new counts are added on top of existing ones.
+func LoadAndJoin(ctx context.Context, database *db.Database, crimesPath string, idx *spatialIndex, zipCodes []string, city string, csvFmt CSVFormat, append bool) error {
 	// ── 1. Insert ZIP codes (just the codes, no geometry) ─────────────────────
 	log.Println("Inserting ZIP codes…")
 	if err := insertZIPCodes(ctx, database, zipCodes, city); err != nil {
@@ -349,7 +387,7 @@ func LoadAndJoin(ctx context.Context, database *db.Database, crimesPath string, 
 
 	log.Printf("Finished reading: %d total, %d skipped, %d buckets", total, skipped, len(agg))
 
-	return insertAggregated(ctx, database, agg, city)
+	return insertAggregated(ctx, database, agg, city, append)
 }
 
 // insertZIPCodes deletes existing rows for this city and inserts fresh ones.
@@ -376,27 +414,48 @@ func insertZIPCodes(ctx context.Context, database *db.Database, zipCodes []strin
 	return nil
 }
 
-func insertAggregated(ctx context.Context, database *db.Database, agg map[aggKey]int, city string) error {
-	log.Printf("Bulk-inserting %d aggregation rows…", len(agg))
+func insertAggregated(ctx context.Context, database *db.Database, agg map[aggKey]int, city string, appendMode bool) error {
+	log.Printf("Bulk-inserting %d aggregation rows… (append=%v)", len(agg), appendMode)
 
-	if _, err := database.Pool.Exec(ctx, `DELETE FROM zip_crime_stats WHERE city = $1`, city); err != nil {
-		return fmt.Errorf("delete zip_crime_stats for city %q: %w", city, err)
+	if !appendMode {
+		if _, err := database.Pool.Exec(ctx, `DELETE FROM zip_crime_stats WHERE city = $1`, city); err != nil {
+			return fmt.Errorf("delete zip_crime_stats for city %q: %w", city, err)
+		}
+
+		rows := make([][]any, 0, len(agg))
+		for k, count := range agg {
+			rows = append(rows, []any{k.zipCode, city, k.year, k.month, k.crimeType, count})
+		}
+		_, err := database.Pool.CopyFrom(
+			ctx,
+			pgx.Identifier{"zip_crime_stats"},
+			[]string{"zip_code", "city", "year", "month", "crime_type", "crime_count"},
+			pgx.CopyFromRows(rows),
+		)
+		if err != nil {
+			return fmt.Errorf("bulk insert: %w", err)
+		}
+	} else {
+		// Append mode: upsert so existing counts accumulate.
+		const upsertSQL = `
+			INSERT INTO zip_crime_stats (zip_code, city, year, month, crime_type, crime_count)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (zip_code, city, year, month, crime_type)
+			DO UPDATE SET crime_count = zip_crime_stats.crime_count + EXCLUDED.crime_count`
+
+		batch := &pgx.Batch{}
+		for k, count := range agg {
+			batch.Queue(upsertSQL, k.zipCode, city, k.year, k.month, k.crimeType, count)
+		}
+		br := database.Pool.SendBatch(ctx, batch)
+		defer br.Close()
+		for range agg {
+			if _, err := br.Exec(); err != nil {
+				return fmt.Errorf("upsert batch: %w", err)
+			}
+		}
 	}
 
-	rows := make([][]any, 0, len(agg))
-	for k, count := range agg {
-		rows = append(rows, []any{k.zipCode, city, k.year, k.month, k.crimeType, count})
-	}
-
-	_, err := database.Pool.CopyFrom(
-		ctx,
-		pgx.Identifier{"zip_crime_stats"},
-		[]string{"zip_code", "city", "year", "month", "crime_type", "crime_count"},
-		pgx.CopyFromRows(rows),
-	)
-	if err != nil {
-		return fmt.Errorf("bulk insert: %w", err)
-	}
 	log.Println("ETL complete.")
 	return nil
 }

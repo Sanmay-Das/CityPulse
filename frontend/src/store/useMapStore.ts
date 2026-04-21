@@ -10,6 +10,7 @@ export interface ZipStats {
 export const CITY_CENTERS: Record<string, { longitude: number; latitude: number; zoom: number }> = {
   Chicago: { longitude: -87.7173, latitude: 41.8337, zoom: 10 },
   "Los Angeles": { longitude: -118.2437, latitude: 34.0522, zoom: 10 },
+  "San Francisco": { longitude: -122.4194, latitude: 37.7749, zoom: 12 },
   Riverside: { longitude: -117.3961, latitude: 33.9533, zoom: 11 },
 };
 
