@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_ALL_ZIP_STATS, GET_AVAILABLE_YEARS, GET_AVAILABLE_CITIES, GET_YEAR_RANGE } from "./graphql/queries";
 import { useMapStore } from "./store/useMapStore";
@@ -27,6 +27,8 @@ export default function App() {
     }
   }, [data, setZipStats]);
 
+  const [showAbout, setShowAbout] = useState(true);
+
   const cities: string[] = citiesData?.availableCities ?? [];
   const years: number[] = yearsData?.availableYears ?? [];
   const minYear: number = yearRangeData?.yearRange?.minYear ?? 0;
@@ -43,6 +45,14 @@ export default function App() {
           <span className="text-slate-400 text-sm hidden sm:block">
             Crime by ZIP Code · {yearRangeLabel}
           </span>
+          {!showAbout && (
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-slate-400 hover:text-white text-xs border border-slate-600 rounded-lg px-2 py-1 hidden sm:block"
+            >
+              ℹ About
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -90,10 +100,10 @@ export default function App() {
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/80">
-          <div className="bg-red-900/80 border border-red-700 rounded-xl p-6 max-w-sm text-center">
-            <p className="text-red-300 font-semibold">Failed to load data</p>
-            <p className="text-red-400 text-sm mt-1">{error.message}</p>
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20">
+          <div className="bg-red-900/80 border border-red-700 rounded-xl px-5 py-3 text-center">
+            <p className="text-red-300 font-semibold text-sm">Failed to load data</p>
+            <p className="text-red-400 text-xs mt-0.5">{error.message}</p>
           </div>
         </div>
       )}
@@ -105,7 +115,7 @@ export default function App() {
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-6 left-5 z-10 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4">
+      <div className="absolute bottom-10 right-5 z-10 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4">
         <p className="text-slate-400 text-xs font-medium mb-2 uppercase tracking-wide">
           Crime density
         </p>
@@ -118,6 +128,33 @@ export default function App() {
           <span>High</span>
         </div>
       </div>
+
+      {/* About panel — left side, below legend */}
+      {showAbout && (
+      <div className="absolute left-5 bottom-36 z-10 w-72 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-white font-bold text-sm">About CityCrimes</h2>
+          <button onClick={() => setShowAbout(false)} className="text-slate-400 hover:text-white text-lg leading-none">×</button>
+        </div>
+        <p className="text-slate-400 text-xs leading-relaxed mb-3">
+          Explore crime statistics across US cities at the ZIP code level. Currently covering Chicago, Los Angeles, and San Francisco - with more cities coming soon.
+        </p>
+        <h3 className="text-white font-semibold text-xs mb-1">How to use</h3>
+        <ul className="text-slate-400 text-xs space-y-1 list-disc list-inside">
+          <li>Select a city from the dropdown</li>
+          <li>Click any ZIP code for a detailed breakdown</li>
+          <li>Filter by year using the year selector</li>
+          <li>Export data as CSV for Excel or PowerBI</li>
+        </ul>
+      </div>
+      )}
+
+      {/* Footer */}
+      <footer className="absolute bottom-0 left-0 right-0 z-10 bg-slate-950/80 border-t border-slate-800 px-6 py-2">
+        <p className="text-slate-500 text-xs text-center">
+          © 2026 CityCrimes · Data from official city open data portals
+        </p>
+      </footer>
     </div>
   );
 }
