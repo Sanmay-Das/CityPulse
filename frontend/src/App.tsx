@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import PrivacyModal from "./components/PrivacyModal";
 import { useQuery } from "@apollo/client";
 import { GET_ALL_ZIP_STATS, GET_AVAILABLE_YEARS, GET_AVAILABLE_CITIES, GET_YEAR_RANGE } from "./graphql/queries";
 import { useMapStore } from "./store/useMapStore";
 import MapView from "./components/Map/MapView";
 import DrilldownPanel from "./components/Panel/DrilldownPanel";
+import AIQueryBox from "./components/AI/AIQueryBox";
 
 export default function App() {
   const { selectedCity, selectedYear, selectedZip, setSelectedCity, setSelectedYear, setZipStats, setSelectedZip } =
@@ -37,6 +40,7 @@ export default function App() {
 
   return (
     <div className="relative w-full h-full flex flex-col">
+      <PrivacyModal />
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-700">
         <div className="flex items-center gap-3">
@@ -115,7 +119,7 @@ export default function App() {
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-10 right-5 z-10 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4">
+      <div className="absolute bottom-10 left-5 z-10 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4">
         <p className="text-slate-400 text-xs font-medium mb-2 uppercase tracking-wide">
           Crime density
         </p>
@@ -128,6 +132,9 @@ export default function App() {
           <span>High</span>
         </div>
       </div>
+
+      {/* AI Query Box */}
+      <AIQueryBox />
 
       {/* About panel — left side, below legend */}
       {showAbout && (
@@ -152,7 +159,10 @@ export default function App() {
       {/* Footer */}
       <footer className="absolute bottom-0 left-0 right-0 z-10 bg-slate-950/80 border-t border-slate-800 px-6 py-2">
         <p className="text-slate-500 text-xs text-center">
-          © 2026 CityCrimes · Data from official city open data portals
+          © 2026 CityCrimes · Data from official city open data portals ·{" "}
+          <Link to="/privacy" className="hover:text-slate-300 underline underline-offset-2">
+            Privacy Policy
+          </Link>
         </p>
       </footer>
     </div>

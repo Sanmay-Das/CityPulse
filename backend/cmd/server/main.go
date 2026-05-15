@@ -20,10 +20,13 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/graphql-go/handler"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 
+	"chicago-safety-index/internal/ai"
 	"chicago-safety-index/internal/db"
 	"chicago-safety-index/internal/graph"
 )
@@ -37,6 +40,9 @@ func cityParam(r *http.Request) string {
 }
 
 func main() {
+	// Load .env file for local development (ignored in production).
+	_ = godotenv.Load()
+
 	ctx := context.Background()
 
 	// ── Database ──────────────────────────────────────────────────────────────
@@ -46,6 +52,13 @@ func main() {
 	}
 	defer database.Pool.Close()
 	log.Println("Connected to database.")
+
+	// ── pgvector RAG table ────────────────────────────────────────────────────
+	if err := database.EnsureRAGTable(ctx); err != nil {
+		log.Printf("WARN: EnsureRAGTable: %v (RAG will be unavailable)", err)
+	} else {
+		log.Println("RAG table ready.")
+	}
 
 	// ── GraphQL schema ────────────────────────────────────────────────────────
 	resolver := &graph.Resolver{DB: database}
@@ -118,6 +131,87 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(rows)
+	})
+
+	// AI natural language query endpoint.
+	mux.HandleFunc("/api/ai/query", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var body struct {
+			Question string `json:"question"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Question == "" {
+			http.Error(w, "missing question", http.StatusBadRequest)
+			return
+		}
+
+		// Step 1 (RAG): embed the question and retrieve similar neighborhood docs.
+		ragContext := ""
+		if queryVec, embErr := ai.EmbedQuery(r.Context(), body.Question); embErr == nil {
+			if docs, searchErr := database.SearchSimilarDocs(r.Context(), queryVec, 3); searchErr == nil && len(docs) > 0 {
+				var ctxParts []string
+				for _, doc := range docs {
+					ctxParts = append(ctxParts, doc.Description)
+				}
+				ragContext = strings.Join(ctxParts, "\n")
+			}
+		}
+
+		// Step 2: Generate SQL from question.
+		sqlQuery, err := ai.GenerateSQL(r.Context(), body.Question)
+		if err != nil {
+			http.Error(w, "AI error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Safety: only allow SELECT queries.
+		if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(sqlQuery)), "SELECT") {
+			http.Error(w, "only SELECT queries allowed", http.StatusBadRequest)
+			return
+		}
+
+		// Step 3: Execute SQL against database.
+		rows, err := database.Pool.Query(r.Context(), sqlQuery)
+		if err != nil {
+			http.Error(w, "query error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		// Collect results as a readable string.
+		fieldDescs := rows.FieldDescriptions()
+		var resultLines []string
+		for rows.Next() {
+			vals, err := rows.Values()
+			if err != nil {
+				continue
+			}
+			var parts []string
+			for i, v := range vals {
+				parts = append(parts, fmt.Sprintf("%s: %v", fieldDescs[i].Name, v))
+			}
+			resultLines = append(resultLines, strings.Join(parts, ", "))
+		}
+		resultStr := strings.Join(resultLines, "\n")
+		if resultStr == "" {
+			resultStr = "No results found."
+		}
+
+		// Step 4: Format results as natural language (with optional RAG context).
+		answer, err := ai.FormatAnswer(r.Context(), body.Question, resultStr, ragContext)
+		if err != nil {
+			http.Error(w, "AI error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"answer": answer,
+			"sql":    sqlQuery,
+		})
 	})
 
 	// ── CORS + server ─────────────────────────────────────────────────────────
