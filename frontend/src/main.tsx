@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import App from "./App";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Insights from "./pages/Insights";
 import "./index.css";
 
 const apiBase = import.meta.env.VITE_API_URL ?? "";
@@ -18,8 +19,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ApolloProvider client={client}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<App />} />
+          <Route path="/" element={<Insights />} />
+          <Route path="/map" element={<App />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/insights" element={<Insights />} />
         </Routes>
       </BrowserRouter>
     </ApolloProvider>

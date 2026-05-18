@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PrivacyModal from "./components/PrivacyModal";
 import { useQuery } from "@apollo/client";
 import { GET_ALL_ZIP_STATS, GET_AVAILABLE_YEARS, GET_AVAILABLE_CITIES, GET_YEAR_RANGE } from "./graphql/queries";
@@ -11,6 +11,12 @@ import AIQueryBox from "./components/AI/AIQueryBox";
 export default function App() {
   const { selectedCity, selectedYear, selectedZip, setSelectedCity, setSelectedYear, setZipStats, setSelectedZip } =
     useMapStore();
+
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const city = searchParams.get("city");
+    if (city) setSelectedCity(city);
+  }, []);
 
   const { data: citiesData } = useQuery(GET_AVAILABLE_CITIES);
   const { data: yearsData } = useQuery(GET_AVAILABLE_YEARS, {
@@ -45,7 +51,7 @@ export default function App() {
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-3 bg-slate-900/90 backdrop-blur border-b border-slate-700">
         <div className="flex items-center gap-3">
           <div className="w-2 h-6 bg-chicago-red rounded-full" />
-          <h1 className="text-white font-bold text-lg tracking-tight">CityCrimes</h1>
+          <Link to="/" className="text-white font-bold text-lg tracking-tight hover:text-slate-200">CityCrimes</Link>
           <span className="text-slate-400 text-sm hidden sm:block">
             Crime by ZIP Code · {yearRangeLabel}
           </span>
@@ -160,6 +166,10 @@ export default function App() {
       <footer className="absolute bottom-0 left-0 right-0 z-10 bg-slate-950/80 border-t border-slate-800 px-6 py-2">
         <p className="text-slate-500 text-xs text-center">
           © 2026 CityCrimes · Data from official city open data portals ·{" "}
+          <Link to="/insights" className="hover:text-slate-300 underline underline-offset-2">
+            Insights
+          </Link>
+          {" "}·{" "}
           <Link to="/privacy" className="hover:text-slate-300 underline underline-offset-2">
             Privacy Policy
           </Link>
